@@ -2,7 +2,7 @@ import Canvas from "components/canvas";
 import PromptForm from "components/prompt-form";
 import Head from "next/head";
 import { useState } from "react";
-import Predictions from "components/predictions";
+import Predictions, { Prediction } from "components/predictions";
 import Error from "components/error";
 import uploadFile from "lib/upload";
 import naughtyWords from "naughty-words";
@@ -25,7 +25,7 @@ export default function Home() {
   const [initialPrompt] = useState(seed.prompt);
   const [scribble, setScribble] = useState(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, scribble) => {
     e.preventDefault();
 
     // track submissions so we can show a spinner while waiting for the next prediction to be created
@@ -82,8 +82,94 @@ export default function Home() {
         return;
       }
     }
-
+    console.log("res:::", prediction, submissionCount, scribble);
     setIsProcessing(false);
+  };
+  const setter = async () => {
+    async function toDataURL(url, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.onload = function() {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+          callback(reader.result);
+        };
+        reader.readAsDataURL(xhr.response);
+      };
+      xhr.open("GET", url);
+      xhr.responseType = "blob";
+      xhr.send();
+    }
+    console.log(predictions);
+    if (Object.keys(predictions) < 1) return;
+    toDataURL(
+      predictions[Object.keys(predictions)[submissionCount - 1]].output[0],
+      function(dataUrl) {
+        console.log("RESULT:", dataUrl);
+        setScribble(dataUrl);
+      }
+    );
+  };
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function demo() {
+    for (let i = 0; i < 5; i++) {
+      console.log(`Waiting ${i} seconds...`);
+      await sleep(i * 1000);
+    }
+    console.log("Done");
+  }
+
+  const [frames, setframes] = useState(1);
+  const [framesi, setframesi] = useState(2);
+  const generateFrames = async (e) => {
+    // for (let i = 0; i < frames; i++) {
+
+    async function toDataURL(url, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.onload = function() {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+          callback(reader.result);
+        };
+        reader.readAsDataURL(xhr.response);
+      };
+      xhr.open("GET", url);
+      xhr.responseType = "blob";
+      xhr.send();
+    }
+    //  console.log(predictions);
+
+    if (Object.keys(predictions) < 1) {
+      await handleSubmit(e, scribble);
+      return;
+    }
+    let i = 0;
+    while (i < frames) {
+      console.log("making frame: ", i, e);
+      while (isProcessing) { }
+      await toDataURL(
+        predictions[
+          Object.keys(predictions)[Object.keys(predictions).length - 1]
+        ].output[0],
+        async (dataUrl) => {
+          console.log(
+            "RESULT:",
+            predictions,
+            submissionCount,
+            dataUrl,
+            scribble
+          );
+
+          //          await handleSubmit(e, scribble);
+          await setScribble(dataUrl);
+          // await sleep(5000);
+          await handleSubmit(e, dataUrl);
+        }
+      );
+      i++;
+    }
   };
 
   return (
@@ -93,6 +179,7 @@ export default function Home() {
         <meta name="description" content={pkg.appMetaDescription} />
         <meta property="og:title" content={pkg.appName} />
         <meta property="og:description" content={pkg.appMetaDescription} />
+
         <meta
           property="og:image"
           content={`${HOST}/og-b7xwc4g4wrdrtneilxnbngzvti.jpg`}
@@ -110,7 +197,14 @@ export default function Home() {
               {pkg.appSubtitle}
             </p>
           </hgroup>
+          <form>
+            {" "}
+            <button type="submit" onClick={generateFrames}>
+              generate
+            </button>
+          </form>
 
+          <button onClick={setter}>setter</button>
           <Canvas
             startingPaths={seed.paths}
             onScribble={setScribble}
@@ -120,7 +214,7 @@ export default function Home() {
 
           <PromptForm
             initialPrompt={initialPrompt}
-            onSubmit={handleSubmit}
+            onSubmit={generateFrames}
             isProcessing={isProcessing}
             scribbleExists={scribbleExists}
           />

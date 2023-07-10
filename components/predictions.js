@@ -10,7 +10,7 @@ export default function Predictions({ predictions, submissionCount }) {
 
   useEffect(() => {
     if (submissionCount > 0) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+      //  scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [predictions, submissionCount]);
 
